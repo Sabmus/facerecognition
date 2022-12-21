@@ -1,0 +1,16 @@
+.bounding-box {
+    position: absolute;
+    box-shadow: 0 0 0 3px yellow inset;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    cursor: pointer;
+    padding-left: 5px;
+    padding-top: 2px;
+    color: yellow;
+    opacity: 0.8;
+}
+
+.bounding-box:hover {
+    opacity: 1;
+}

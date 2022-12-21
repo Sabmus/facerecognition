@@ -6,6 +6,7 @@ import ImageUrlInput from './components/imageurlinput/ImageUrlInput';
 import Rank from './components/rank/Rank';
 import ParticlesComponent from './components/particles/ParticlesComponent';
 import FaceRecognition from './components/prediction/FaceRecognition';
+import SignIn from './components/SignIn/SignIn';
 
 
 const USER_ID = 'sabmus';
@@ -23,8 +24,31 @@ class App extends Component {
     super();
     this.state = {
       input: "",
-      imageUrl: ""
+      imageUrl: "",
+      box: {},
+      route: "signedOut"
     }
+  }
+
+  boxFace = (results) => {
+    const regions = results.outputs[0].data.regions[0];
+    console.log(regions);
+    const image = document.querySelector("#inputImage");
+    const width = Number(image.width);
+    const height = Number(image.height);
+
+    return {
+      leftCol: width * regions.region_info.bounding_box.left_col,
+      topRow: height * regions.region_info.bounding_box.top_row,
+      rightCol: width - (width * regions.region_info.bounding_box.right_col),
+      bottomRow: height - (height * regions.region_info.bounding_box.bottom_row),
+      predictionValue: "value: " + regions.value
+    }
+  }
+
+  displayBoxFace = (calculatedBox) => {
+    console.log(calculatedBox);
+    this.setState({ box: calculatedBox });
   }
 
   onInputChange = (event) => {
@@ -33,7 +57,7 @@ class App extends Component {
   }
 
   onButtonSubmit = () => {
-    this.setState({ imageUrl: this.state.input })
+    this.setState({ imageUrl: this.state.input });
     console.log(this.state.imageUrl);
 
     const raw = JSON.stringify({
@@ -63,22 +87,33 @@ class App extends Component {
 
     fetch("https://api.clarifai.com/v2/models/" + MODEL_ID + "/versions/" + MODEL_VERSION_ID + "/outputs", requestOptions)
         .then(response => response.json())
-        .then(result => console.log(result.outputs[0].data.regions))
+        .then(result => this.displayBoxFace(this.boxFace(result)))
         .catch(error => console.log('error', error));
   }
  
+  onRouteChange = (newRoute) => {
+    this.setState({ route: newRoute });
+  }
+
   render () {
     return (
       <div className="App">
         <ParticlesComponent id="tsparticles" />
-        <Navigation />
-        <Logo />
-        <Rank />
-        <ImageUrlInput 
-          onInputChange={ this.onInputChange } 
-          onButtonSubmit={ this.onButtonSubmit }
-        />
-        <FaceRecognition image_url={ this.state.imageUrl }/>
+        <Navigation onRouteChange={ this.onRouteChange }/>
+
+        { this.state.route === "signedOut" ?
+            <SignIn onRouteChange={ this.onRouteChange }/> :
+            <>
+              <Logo />
+              <Rank />
+              <ImageUrlInput 
+                onInputChange={ this.onInputChange } 
+                onButtonSubmit={ this.onButtonSubmit }
+              />
+              <FaceRecognition image_url={ this.state.imageUrl } box={ this.state.box }/>
+            </>
+        }
+        
       </div>
     );
   }
