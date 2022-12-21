@@ -1,7 +1,7 @@
 import React from "react";
 import './imageurlinput.css'
 
-const ImageUrlInput = () => {
+const ImageUrlInput = ({ onInputChange, onButtonSubmit }) => {
     return (
         <div>
             <p className="f3">
@@ -9,8 +9,8 @@ const ImageUrlInput = () => {
             </p>
             <div className="center">
                 <div className="center pa4 br3 shadow-5 image-input">
-                    <input className="f4 pa2 w-70" type="text" placeholder="image url" />
-                    <button className="w-30 grow f4 ph3 pv2 white bg-light-purple ba">{"detect"}</button>
+                    <input className="f4 pa2 w-70" type="text" placeholder="image url" onChange={ onInputChange }/>
+                    <button className="w-30 grow f4 ph3 pv2 white bg-light-purple ba" onClick={ onButtonSubmit }>{"detect"}</button>
                 </div>
             </div>
         </div>

@@ -37,7 +37,7 @@ const particlesOptions = {
         },
         links: {
             color: "#ffffff",
-            distance: 100,
+            distance: 250,
             enable: true,
             opacity: 0.5,
             width: 1,
@@ -52,7 +52,7 @@ const particlesOptions = {
                 default: "bounce",
             },
             random: false,
-            speed: 3,
+            speed: 2,
             straight: false,
         },
         number: {
