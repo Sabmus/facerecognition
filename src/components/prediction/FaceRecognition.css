@@ -14,3 +14,11 @@
 .bounding-box:hover {
     opacity: 1;
 }
+
+.predicted-value {
+    display: none;
+}
+
+.bounding-box:hover > .predicted-value {
+    display: block;
+}

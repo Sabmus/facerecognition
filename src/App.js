@@ -7,6 +7,7 @@ import Rank from './components/rank/Rank';
 import ParticlesComponent from './components/particles/ParticlesComponent';
 import FaceRecognition from './components/prediction/FaceRecognition';
 import SignIn from './components/SignIn/SignIn';
+import Register from './components/Register/Register';
 
 
 const USER_ID = 'sabmus';
@@ -25,40 +26,50 @@ class App extends Component {
     this.state = {
       input: "",
       imageUrl: "",
-      box: {},
-      route: "signedOut"
+      box: [],
+      route: "signin",
+      isLoggedIn: false,
+      user: {
+        id: "",
+        username: "",
+        email: "",
+        entries: 0,
+        joined: ""
+      }
     }
   }
 
+
   boxFace = (results) => {
-    const regions = results.outputs[0].data.regions[0];
-    console.log(regions);
     const image = document.querySelector("#inputImage");
     const width = Number(image.width);
     const height = Number(image.height);
+    
+    // const regions = results.outputs[0].data.regions[0];
+    const faces = results.outputs[0].data.regions;
+    const boxes = faces.map(face => {
+      return {
+        leftCol: width * face.region_info.bounding_box.left_col,
+        topRow: height * face.region_info.bounding_box.top_row,
+        rightCol: width - (width * face.region_info.bounding_box.right_col),
+        bottomRow: height - (height * face.region_info.bounding_box.bottom_row),
+        predictionValue: "value: " + face.value
+      }
+    })
 
-    return {
-      leftCol: width * regions.region_info.bounding_box.left_col,
-      topRow: height * regions.region_info.bounding_box.top_row,
-      rightCol: width - (width * regions.region_info.bounding_box.right_col),
-      bottomRow: height - (height * regions.region_info.bounding_box.bottom_row),
-      predictionValue: "value: " + regions.value
-    }
+    return boxes;
   }
 
   displayBoxFace = (calculatedBox) => {
-    console.log(calculatedBox);
     this.setState({ box: calculatedBox });
   }
 
   onInputChange = (event) => {
     this.setState({ input: event.target.value });
-    console.log(event.target.value);
   }
 
-  onButtonSubmit = () => {
+  onImageSubmit = () => {
     this.setState({ imageUrl: this.state.input });
-    console.log(this.state.imageUrl);
 
     const raw = JSON.stringify({
         "user_app_id": {
@@ -87,33 +98,77 @@ class App extends Component {
 
     fetch("https://api.clarifai.com/v2/models/" + MODEL_ID + "/versions/" + MODEL_VERSION_ID + "/outputs", requestOptions)
         .then(response => response.json())
-        .then(result => this.displayBoxFace(this.boxFace(result)))
+        .then(result => {
+          this.increaseEntries(this.state.user);
+          this.displayBoxFace(this.boxFace(result));
+        })
         .catch(error => console.log('error', error));
   }
  
   onRouteChange = (newRoute) => {
+    if (newRoute === "signin") {
+      this.setState({ isLoggedIn: false });
+    } else if (newRoute === "home") {
+      this.setState({ isLoggedIn: true });
+    }
+
     this.setState({ route: newRoute });
+  }
+
+  loadUserData = (userData) => {
+    this.setState({ user: {
+      id: userData.id,
+      username: userData.username,
+      email: userData.email,
+      entries: userData.entries,
+      joined: userData.joined
+    }})
+  }
+
+  increaseEntries = (user) => {
+    let reqOptions = {
+      method: "put",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+          id: user.id
+      })
+    }
+
+    fetch("http://localhost:8080/image", reqOptions)
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            throw new Error(response.status);
+        }
+    })
+    .then(entryCount => {
+      this.setState(Object.assign(this.state.user, { entries: entryCount }));
+    })
+    .catch(error => console.log(error));
   }
 
   render () {
     return (
       <div className="App">
+        <Navigation onRouteChange={ this.onRouteChange } isLoggedIn={ this.state.isLoggedIn } />
         <ParticlesComponent id="tsparticles" />
-        <Navigation onRouteChange={ this.onRouteChange }/>
 
-        { this.state.route === "signedOut" ?
-            <SignIn onRouteChange={ this.onRouteChange }/> :
+        { this.state.route === "home" ? 
             <>
               <Logo />
-              <Rank />
+              <Rank username={this.state.user.username} entries={this.state.user.entries} />
               <ImageUrlInput 
                 onInputChange={ this.onInputChange } 
-                onButtonSubmit={ this.onButtonSubmit }
+                onImageSubmit={ this.onImageSubmit }
               />
               <FaceRecognition image_url={ this.state.imageUrl } box={ this.state.box }/>
-            </>
-        }
-        
+            </> : (
+              this.state.route === "signin" ? 
+              <SignIn onRouteChange={ this.onRouteChange } loadUserData={ this.loadUserData }/> : 
+              <Register onRouteChange={ this.onRouteChange } loadUserData={ this.loadUserData } />
+              )
+            }
       </div>
     );
   }
