@@ -10,33 +10,26 @@ import SignIn from './components/SignIn/SignIn';
 import Register from './components/Register/Register';
 
 
-const USER_ID = 'sabmus';
-// Your PAT (Personal Access Token) can be found in the portal under Authentification
-const PAT = '';
-const APP_ID = 'face-recognition';
-// Change these to whatever model and image URL you want to use
-const MODEL_ID = 'face-detection';
-const MODEL_VERSION_ID = '6dc7e46bc9124c5c8824be4822abe105';    
-// onst IMAGE_URL = 'https://samples.clarifai.com/metro-north.jpg';
 
+const initialState = {
+  input: "",
+  imageUrl: "",
+  box: [],
+  route: "signin",
+  isLoggedIn: false,
+  user: {
+    id: "",
+    username: "",
+    email: "",
+    entries: 0,
+    joined: ""
+  }
+}
 
 class App extends Component {
   constructor() {
     super();
-    this.state = {
-      input: "",
-      imageUrl: "",
-      box: [],
-      route: "signin",
-      isLoggedIn: false,
-      user: {
-        id: "",
-        username: "",
-        email: "",
-        entries: 0,
-        joined: ""
-      }
-    }
+    this.state = initialState;
   }
 
 
@@ -45,9 +38,7 @@ class App extends Component {
     const width = Number(image.width);
     const height = Number(image.height);
     
-    // const regions = results.outputs[0].data.regions[0];
-    const faces = results.outputs[0].data.regions;
-    const boxes = faces.map(face => {
+    const boxes = results.map(face => {
       return {
         leftCol: width * face.region_info.bounding_box.left_col,
         topRow: height * face.region_info.bounding_box.top_row,
@@ -71,43 +62,29 @@ class App extends Component {
   onImageSubmit = () => {
     this.setState({ imageUrl: this.state.input });
 
-    const raw = JSON.stringify({
-        "user_app_id": {
-            "user_id": USER_ID,
-            "app_id": APP_ID
-        },
-        "inputs": [
-            {
-                "data": {
-                    "image": {
-                        "url": this.state.input
-                    }
-                }
-            }
-        ]
-    });
+    let reqOptions = {
+      method: "post",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+          imageUrl: this.state.input
+      })
+    }
 
-    const requestOptions = {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Key ' + PAT
-        },
-        body: raw
-    };
-
-    fetch("https://api.clarifai.com/v2/models/" + MODEL_ID + "/versions/" + MODEL_VERSION_ID + "/outputs", requestOptions)
-        .then(response => response.json())
-        .then(result => {
-          this.increaseEntries(this.state.user);
-          this.displayBoxFace(this.boxFace(result));
-        })
-        .catch(error => console.log('error', error));
+    fetch("http://localhost:8080/face-recognition", reqOptions)
+    .then(response => {
+      if (response.ok) {
+        return response.json()
+      } else {
+        throw new Error(response.status);
+      }
+    })
+    .then(data => this.displayBoxFace(this.boxFace(data)))
+    .catch(error => console.log(error));
   }
  
   onRouteChange = (newRoute) => {
     if (newRoute === "signin") {
-      this.setState({ isLoggedIn: false });
+      this.setState(initialState);
     } else if (newRoute === "home") {
       this.setState({ isLoggedIn: true });
     }

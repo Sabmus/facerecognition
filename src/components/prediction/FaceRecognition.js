@@ -10,7 +10,7 @@ const FaceRecognition = ({ image_url, box }) => {
                 {
                     box.map(face => {
                         return (
-                            <div className="bounding-box" style={{ top: face.topRow, right: face.rightCol, bottom: face.bottomRow, left: face.leftCol }}>
+                            <div key={face.topRow} className="bounding-box" style={{ top: face.topRow, right: face.rightCol, bottom: face.bottomRow, left: face.leftCol }}>
                                 <span className="predicted-value">{face.predictionValue}</span> 
                             </div>
                         )
